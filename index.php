@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta DNI/RUC - CyberHack Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        body {
+            font-family: 'VT323', monospace;
+            background: #0a0a0a;
+            color: #0f0;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .glitch {
+            position: relative;
+            animation: glitch 2s linear infinite;
+            font-size: 3.5rem;
+            line-height: 1.2;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            color: #0f0;
+        }
+        .glitch::before {
+            left: 3px;
+            text-shadow: -3px 0 #f0f;
+            animation: glitch-top 1s linear infinite;
+        }
+        .glitch::after {
+            left: -3px;
+            text-shadow: 3px 0 #0ff;
+            animation: glitch-bottom 1.5s linear infinite;
+        }
+        @keyframes glitch {
+            2%, 64% { transform: translate(3px, 0); }
+            4%, 60% { transform: translate(-3px, 0); }
+            62% { transform: translate(0, 0); }
+        }
+        @keyframes glitch-top {
+            2%, 64% { transform: translate(3px, -3px); }
+            4%, 60% { transform: translate(-3px, 3px); }
+            62% { transform: translate(0, 0); }
+        }
+        @keyframes glitch-bottom {
+            2%, 64% { transform: translate(-3px, 3px); }
+            4%, 60% { transform: translate(3px, -3px); }
+            62% { transform: translate(0, 0); }
+        }
+        .neon-btn {
+            border: 3px solid #0f0;
+            box-shadow: 0 0 15px #0f0, 0 0 30px #0f0;
+            transition: all 0.3s ease;
+            font-size: 1.5rem;
+            padding: 0.75rem;
+        }
+        .neon-btn:hover {
+            box-shadow: 0 0 25px #0f0, 0 0 50px #0f0;
+            background: rgba(0, 255, 0, 0.3);
+        }
+        .terminal {
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #0f0;
+            box-shadow: inset 0 0 20px #0f0, 0 0 30px #0f0;
+            transition: all 0.5s ease;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 600px;
+        }
+        .loader {
+            display: none;
+            border: 6px solid #0f0;
+            border-top: 6px solid #0ff;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        input, select {
+            transition: all 0.3s ease;
+            font-size: 1.25rem;
+            padding: 0.5rem;
+        }
+        input:focus, select:focus {
+            box-shadow: 0 0 15px #0f0;
+            outline: none;
+        }
+        #resultado {
+            font-size: 1.25rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bgCanvas"></canvas>
+    <div class="flex flex-col items-center justify-center">
+        <h1 class="glitch mb-8" data-text="CyberHack DNI/RUC">CyberHack DNI/RUC</h1>
+        <div class="terminal">
+            <div class="flex mb-6">
+                <select id="type" class="bg-black text-green-500 border border-green-500 mr-3 flex-1">
+                    <option value="dni">DNI</option>
+                    <option value="ruc">RUC</option>
+                </select>
+                <input id="number" type="text" placeholder="Ingresa DNI o RUC" class="bg-black text-green-500 border border-green-500 flex-2" value="70880265">
+            </div>
+            <button id="consultar" class="neon-btn w-full">Iniciar Hack</button>
+            <div id="resultado" class="mt-6"></div>
+            <div id="loader" class="loader"></div>
+        </div>
+    </div>
+
+    <audio id="clickSound" src="https://freesound.org/data/previews/171/171671_2437358-lq.mp3"></audio>
+    <audio id="typeSound" src="https://freesound.org/data/previews/243/243020_71257-lq.mp3"></audio>
+    <audio id="successSound" src="https://freesound.org/data/previews/456/456440_5121236-lq.mp3"></audio>
+
+    <script>
+        // Fondo animado optimizado
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const fontSize = 14;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(1);
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px VT323';
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.98) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(draw, 50);
+
+        // Manejo de consulta
+        const consultarBtn = document.getElementById('consultar');
+        const typeSelect = document.getElementById('type');
+        const numberInput = document.getElementById('number');
+        const resultadoDiv = document.getElementById('resultado');
+        const loader = document.getElementById('loader');
+        const clickSound = document.getElementById('clickSound');
+        const typeSound = document.getElementById('typeSound');
+        const successSound = document.getElementById('successSound');
+
+        numberInput.addEventListener('input', () => {
+            typeSound.play().catch(() => {});
+            numberInput.value = numberInput.value.replace(/[^0-9]/g, '');
+        });
+
+        consultarBtn.addEventListener('click', () => {
+            clickSound.play().catch(() => {});
+            const type = typeSelect.value;
+            const number = numberInput.value.trim();
+
+            if (!number || (type === 'dni' && number.length !== 8) || (type === 'ruc' && number.length !== 11)) {
+                resultadoDiv.innerHTML = '<p class="text-red-500 animate-pulse">Ingresa un número válido (DNI: 8 dígitos, RUC: 11 dígitos)</p>';
+                return;
+            }
+
+            resultadoDiv.innerHTML = '<p class="animate-pulse">Iniciando conexión...</p>';
+            loader.style.display = 'block';
+            consultarBtn.disabled = true;
+
+            fetch(`api.php?type=${type}&number=${number}`, { cache: 'no-store' })
+                .then(response => {
+                    if (!response.ok) throw new Error(`Error en la API: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    loader.style.display = 'none';
+                    consultarBtn.disabled = false;
+                    successSound.play().catch(() => {});
+                    if (data.error) {
+                        resultadoDiv.innerHTML = `<p class="text-red-500 animate-pulse">${data.error}</p>`;
+                    } else {
+                        let html = '<p class="text-green-500 font-bold">Datos interceptados:</p>';
+                        if (type === 'dni') {
+                            html += `<p>Nombres: ${data.nombres || 'N/A'}</p>`;
+                            html += `<p>Apellido Paterno: ${data.apellidoPaterno || 'N/A'}</p>`;
+                            html += `<p>Apellido Materno: ${data.apellidoMaterno || 'N/A'}</p>`;
+                            html += `<p>DNI: ${data.numeroDocumento || number}</p>`;
+                        } else {
+                            html += `<p>Razón Social: ${data.razonSocial || 'N/A'}</p>`;
+                            html += `<p>RUC: ${data.numeroDocumento || number}</p>`;
+                            html += `<p>Estado: ${data.estado || 'N/A'}</p>`;
+                            html += `<p>Condición: ${data.condicion || 'N/A'}</p>`;
+                        }
+                        resultadoDiv.innerHTML = html;
+                        resultadoDiv.classList.add('animate-pulse');
+                        setTimeout(() => resultadoDiv.classList.remove('animate-pulse'), 500);
+                    }
+                })
+                .catch(error => {
+                    loader.style.display = 'none';
+                    consultarBtn.disabled = false;
+                    resultadoDiv.innerHTML = `<p class="text-red-500 animate-pulse">Error: ${error.message}</p>`;
+                    console.error(error);
+                });
+        });
+
+        // Consulta automática al cargar la página
+        consultarBtn.click();
+    </script>
+</body>
+</html>
